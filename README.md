@@ -35,6 +35,8 @@
 
 ### [Linux](./Debian.md)
 
+[Linux 内核调优](./Linux-Performance.md)
+
 ## [我的一些练习](./exercises/)
 
 [算法](./Algo.md)
