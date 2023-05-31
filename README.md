@@ -37,6 +37,8 @@
 
 ## [我的一些练习](./exercises/)
 
+[算法](./Algo.md)
+
 ## 技能地图
 
 ### 虚拟化技术
@@ -52,7 +54,7 @@
 
 ### CI/CD
 
-1. [Git]()
+1. [Git](./Git-FAQ.md)
 1. Jenkins
 1. GitLab
 1. Kubernetes
