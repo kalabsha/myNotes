@@ -4,24 +4,26 @@
 
 1. 使用 BT 软件（Transmission）或者 Jigdo[^jigdo] 下载 Debian 系统的镜像 iso 文件，
     - [官网](https://www.debian.org/CD/jigdo-cd/)
-    - 国内源站：
-        - [阿里云](https://mirrors.aliyun.com/debian-cd/current/amd64/jigdo-cd/)
-        - [DLBD 版](https://mirrors.aliyun.com/debian-cd/current/amd64/jigdo-dlbd)
+    - 国内阿里云镜像源站：
+        - [精简版：网络安装镜像](https://mirrors.aliyun.com/debian-cd/current/amd64/jigdo-cd/)
+        - [DLBD 版：dual-layer Blu-Ray](https://mirrors.aliyun.com/debian-cd/current/amd64/jigdo-dlbd)
 
 [^jigdo]:笔者近来倾向于使用 [Jigdo](http://atterer.org/jigdo/) ~~和 [Debian Testing](https://mirrors.ustc.edu.cn/debian-cdimage/weekly-builds/amd64/jigdo-dlbd/) 版本~~
 
-2. 创建虚拟机：
-    - 挂载全部两个 DLBD 虚拟光盘（最多可挂载 4 块虚拟光盘）
+1. 创建虚拟机：
+    - 挂载 CD[^iso] 虚拟光盘用于最小化安装系统
     - 适当调整 CPU 核数、内存大小、磁盘空间大小等参数
     - 添加两张网卡：
         - NAT
         - Hostonly（需要先手动创建一块 Hostonly 网卡：Network -> Create）
 
+[^iso]: 后续使用时挂载全部两个 DLBD 虚拟光盘（最多可挂载 4 块虚拟光盘），可以使用 `apt-cdrom` 命令，在没有网络的情况下，安装 Debian 官方提供的软件包
+
 <!-- ![virtualbox](../images/virtualbox.png) -->
 
-3. 安装好系统后，启用光盘作为软件安装源： `# apt-cdrom`
-
 1. 安装系统时不设置 root 密码，则会自动安装 sudo，否则需要登入系统后自行安装
+
+1. 安装好系统后，启用光盘作为软件安装源： `# apt-cdrom`
 
 1. 更改默认编辑器
 
@@ -40,7 +42,7 @@
     Press <enter> to keep the current choice[*], or type selection number: 
     ```
 
-3. 配置 sudo 免密码，控制台 root 免密码登录（此举存在安全隐患，仅为方便在本地实验）
+1. 配置 sudo 免密码、控制台 root 免密码登录（此举存在安全隐患，仅为方便在本地实验）
 
     ```bash
     $ sudo vim /etc/sudoers
@@ -56,10 +58,19 @@
 
     ```
 
-4. 配置网络（systemd-networkd.service），并启用 Bonjour 协议（systemd-resolved.service）：
+1. 配置共享宿主机目录，方便在虚拟机内使用准备好的配置文件：
+    - 在 `Settings -> Shared Folders`，**文件路径** 选择本仓库的 `share` 目录，**文件名** 任填，这里使用 `debian`，**挂载路径** 任填，这里使用 `/mnt/debian`
+    - 进入系统后执行如下操作：
+
+        ```bash
+        sudo mkdir -p /mnt/debian
+        sudo mount -t vboxsf debian /mnt/debian
+        ```
+
+1. 配置网络（systemd-networkd.service），并启用 Bonjour 协议[^dns]（systemd-resolved.service），文件内容如下：
 
     ```bash
-    % cat /etc/systemd/network/10-eth-dhcp.network
+    $ cat /etc/systemd/network/10-eth-dhcp.network
     [Match]
     Name=enp0s3
 
@@ -71,7 +82,7 @@
     UseDomains=false
     UseRoutes=true
 
-    % cat /etc/systemd/network/20-eth-dhcp.network
+    $ cat /etc/systemd/network/20-eth-dhcp.network
     [Match]
     Name=enp0s8
 
@@ -87,16 +98,11 @@
     % systemctl enable systemd-resolved.service
     ```
 
-5. 配置 SSH 密钥对，禁用密码远程登录
-6. Headless 模式
+[^dns]: 这里其实是使用了 DNS 协议，建议使用 `libnss-resolve` 安装包
+
+1. 配置 SSH 密钥对，禁用密码远程登录
+1. Headless 模式
 1. 启用增强功能
-7. 配置共享宿主机目录（需要启用增强功能）
-    - Settings -> Shared Folders 
-    - 进入系统后执行如下操作：
-        ```bash
-            sudo apt install dkms
-            sudo usermod -a -G vboxsf $USER
-        ```
 
 ## VDI 文件瘦身
 
@@ -106,8 +112,8 @@
 1. 登录虚拟机系统后执行以下命令，将系统空间用 /dev/zero 写满到一个临时文件，然后将其清除
 
     ```bash
-    $ sudo apt install pv
-    $ dd if=/dev/zero | pv | sudo dd of=/bigemptyfile bs=4096k; sudo rm -fv /bigemptyfile
+    % sudo apt install pv
+    % dd if=/dev/zero | pv | sudo dd of=/bigemptyfile bs=4096k; sudo rm -fv /bigemptyfile
     ```
 
 2. 关机后，在宿主机上执行以下命令，将空间释放（~~2022-12-05：难过……宿主机为 Windows 时无效~~ 2022-12-06：注意到临时文件的位置位于 /tmp 目录，而操作机器中 /tmp 目录独占一个分区，所以无效。将临时文件改为 /bigemptyfile 即可。）
